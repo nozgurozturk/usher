@@ -37,9 +37,11 @@ func AllocateSeats(groupsOfUser []int, isReversed bool) ([][]int, error) {
 		return nil, ErrOverflow
 	}
 
+	// nolint:gosimple
 	seats := make([][]int, ROW_SIZE, ROW_SIZE)
 
 	for i := 0; i < ROW_SIZE; i++ {
+		// nolint:gosimple
 		seats[i] = make([]int, COL_SIZE, COL_SIZE)
 	}
 
