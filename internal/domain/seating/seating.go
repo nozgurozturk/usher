@@ -1,8 +1,14 @@
 package seating
 
+import "fmt"
+
 const (
 	ROW_SIZE = 3
 	COL_SIZE = 8
+)
+
+var (
+	ErrOverflow = fmt.Errorf("overflow")
 )
 
 // AllocateSeats allocates seats for the given group of users.
@@ -20,7 +26,16 @@ const (
 // 		 [4 4 4 4 5 5 5 5]
 // 		 [5 6 7 7 8 8 8 8]]
 
-func AllocateSeats(groupsOfUser []int, isReversed bool) [][]int {
+func AllocateSeats(groupsOfUser []int, isReversed bool) ([][]int, error) {
+
+	totalUser := 0
+	for _, groupSize := range groupsOfUser {
+		totalUser += groupSize
+	}
+
+	if totalUser > ROW_SIZE*COL_SIZE {
+		return nil, ErrOverflow
+	}
 
 	seats := make([][]int, ROW_SIZE, ROW_SIZE)
 
@@ -37,6 +52,7 @@ func AllocateSeats(groupsOfUser []int, isReversed bool) [][]int {
 
 		for j := 0; j < groupSize; j++ {
 			index := col
+
 			// Reverse order for odd row numbers.
 			if isReversed && row%2 != 0 {
 				index = COL_SIZE - 1 - col
@@ -57,5 +73,5 @@ func AllocateSeats(groupsOfUser []int, isReversed bool) [][]int {
 		}
 	}
 
-	return seats
+	return seats, nil
 }
