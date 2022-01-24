@@ -10,15 +10,26 @@ func TestAllocateSeats(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		users []int
-		want  [][]int
+		name       string
+		users      []int
+		isReversed bool
+		want       [][]int
 	}{
 		{"simple",
 			[]int{1, 3, 4, 4, 5, 1, 2, 4},
+			false,
 			[][]int{
 				{1, 2, 2, 2, 3, 3, 3, 3},
 				{4, 4, 4, 4, 5, 5, 5, 5},
+				{5, 6, 7, 7, 8, 8, 8, 8},
+			},
+		},
+		{"reversed order",
+			[]int{1, 3, 4, 4, 5, 1, 2, 4},
+			true,
+			[][]int{
+				{1, 2, 2, 2, 3, 3, 3, 3},
+				{5, 5, 5, 5, 4, 4, 4, 4},
 				{5, 6, 7, 7, 8, 8, 8, 8},
 			},
 		},
@@ -26,7 +37,7 @@ func TestAllocateSeats(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := seating.AllocateSeats(test.users)
+			got := seating.AllocateSeats(test.users, test.isReversed)
 			compareMatrix(t, got, test.want)
 		})
 	}

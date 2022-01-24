@@ -20,7 +20,7 @@ const (
 // 		 [4 4 4 4 5 5 5 5]
 // 		 [5 6 7 7 8 8 8 8]]
 
-func AllocateSeats(groupsOfUser []int) [][]int {
+func AllocateSeats(groupsOfUser []int, isReversed bool) [][]int {
 
 	seats := make([][]int, ROW_SIZE, ROW_SIZE)
 
@@ -36,7 +36,13 @@ func AllocateSeats(groupsOfUser []int) [][]int {
 		group := i + 1
 
 		for j := 0; j < groupSize; j++ {
-			seats[row][col] = group
+			index := col
+			// Reverse order for odd row numbers.
+			if isReversed && row%2 != 0 {
+				index = COL_SIZE - 1 - col
+			}
+
+			seats[row][index] = group
 			col++
 
 			if col == COL_SIZE {
