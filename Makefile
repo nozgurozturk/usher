@@ -16,5 +16,8 @@ test_unit:
 test_integration:
 	go test -v -run Integration ./...
 
+benchmark:
+	go test -benchmem -bench=. ./...	
+
 coverprofile:
 	go tool cover -html=coverage.out
