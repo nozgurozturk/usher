@@ -47,7 +47,7 @@ func FirstFit(groups []Group, capacity int) [][]Group {
 	bins := make([][]Group, 0, len(groups))
 
 	// Remaining size of the groups
-	remaining := make([]int, len(groups), len(groups))
+	remaining := make([]int, len(groups))
 
 	// Set remaining size of the groups
 	for i := range groups {
@@ -83,7 +83,7 @@ func BestFit(groups []Group, capacity int) [][]Group {
 
 	bins := make([][]Group, 0, len(groups))
 
-	remaining := make([]int, len(groups), len(groups))
+	remaining := make([]int, len(groups))
 
 	for i := range groups {
 		remaining[i] = capacity

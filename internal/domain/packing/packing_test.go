@@ -152,7 +152,7 @@ func TestPackGroups(t *testing.T) {
 			groups := asGroups(test.groups)
 
 			got := packing.PackGroups(groups, test.capacity, test.fn)
-			want := make([][]packing.Group, len(test.want), len(test.want))
+			want := make([][]packing.Group, len(test.want))
 
 			for i := range test.want {
 				want[i] = asGroups(test.want[i])
@@ -209,39 +209,7 @@ BenchmarkBestFitPackGroupsDecrased    	 1157578	       1005 ns/op	     816 B/op	
 
 */
 
-func toMatrix(groups [][]packing.Group) [][]int {
-	matrix := make([][]int, 0, len(groups))
-	for _, group := range groups {
-		sizes := make([]int, 0, len(group))
-		for _, g := range group {
-			sizes = append(sizes, g.Size())
-		}
-		matrix = append(matrix, sizes)
-	}
-	return matrix
-}
-
-// Compare two matrixes.
-func compareMatrix(t *testing.T, got, want [][]int) {
-	t.Helper()
-
-	if len(got) != len(want) {
-		t.Errorf("got %v, want %v", got, want)
-	}
-
-	for i, row := range got {
-		if len(row) != len(want[i]) {
-			t.Errorf("got %v, want %v", got, want)
-		}
-
-		for j, col := range row {
-			if col != want[i][j] {
-				t.Errorf("got %v, want %v", got, want)
-			}
-		}
-	}
-}
-
+// comparePackedGroups compares two packed groups and fails if they are not equal
 func comparePackedGroups(t *testing.T, got, want [][]packing.Group) {
 	t.Helper()
 
@@ -262,24 +230,9 @@ func comparePackedGroups(t *testing.T, got, want [][]packing.Group) {
 	}
 }
 
-// Compare two groups.
-func compareGroups(t *testing.T, got, want []packing.Group) {
-	t.Helper()
-
-	if len(got) != len(want) {
-		t.Errorf("got %v, want %v", got, want)
-	}
-
-	for i, group := range got {
-		if want[i].Size() != group.Size() {
-			t.Errorf("got %v, want %v", got, want)
-		}
-	}
-}
-
 // helper function to convert a slice of mockGroups to a slice of packing.Groups.
 func asGroups(set []mockGroup) []packing.Group {
-	groups := make([]packing.Group, len(set), len(set))
+	groups := make([]packing.Group, len(set))
 
 	for i := range set {
 		groups[i] = set[i]
