@@ -100,7 +100,7 @@ func AllocateSeatsInLayout(groups []packing.Group, l *layout.Layout, rank int) (
 		return nil, err
 	}
 
-	gs := make([]packing.Group, len(groups), len(groups))
+	gs := make([]packing.Group, len(groups))
 	copy(gs, groups)
 
 	// Sort groups by size.
