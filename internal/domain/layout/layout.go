@@ -232,7 +232,6 @@ type Seat struct {
 	row       int
 	col       int
 	rank      int
-	order     int
 	number    int
 	available bool
 }
@@ -243,7 +242,6 @@ func NewSeat(rank, order, number int) *Seat {
 		row:       0,
 		col:       0,
 		rank:      rank,
-		order:     order,
 		number:    number,
 		available: true,
 	}
@@ -273,7 +271,7 @@ func (s *Seat) Number() int {
 }
 
 func (s *Seat) Order() int {
-	return s.order
+	return s.col
 }
 
 func (s *Seat) Available() bool {
