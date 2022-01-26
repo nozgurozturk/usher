@@ -64,53 +64,6 @@ func TestAddSection(t *testing.T) {
 	}
 }
 
-func TestCreateRow(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		seats []int
-		want  []*layout.Seat
-	}{
-		{"simple",
-			[]int{1, 1, 1},
-			[]*layout.Seat{
-				layout.NewSeat(1, 1),
-				layout.NewSeat(1, 2),
-				layout.NewSeat(1, 3),
-			},
-		},
-		{"simple with different ranks",
-			[]int{1, 3, 2},
-			[]*layout.Seat{
-				layout.NewSeat(1, 1),
-				layout.NewSeat(3, 2),
-				layout.NewSeat(2, 3),
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			r := layout.CreateRow(test.seats)
-
-			if r == nil {
-				t.Error("expected row, got nil")
-			}
-
-			if len(r) != len(test.want) {
-				t.Errorf("expected %d seats, got %d", len(test.want), len(r))
-			}
-
-			for i := range test.want {
-				if r[i].Rank() != test.want[i].Rank() {
-					t.Errorf("expected rank %d, got %d", test.want[i].Rank(), r[i].Rank())
-				}
-			}
-		})
-	}
-}
-
 func TestAddRow(t *testing.T) {
 	t.Parallel()
 
@@ -118,9 +71,7 @@ func TestAddRow(t *testing.T) {
 
 	prevSize := len(s.Rows())
 
-	r := layout.CreateRow([]int{1, 1, 1})
-
-	s.AddRow(r)
+	s.AddRow(layout.NewRow())
 
 	if len(s.Rows()) != prevSize+1 {
 		t.Errorf("expected %d row, got %d", prevSize+1, len(s.Rows()))
@@ -141,7 +92,7 @@ func TestNewSeat(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := layout.NewSeat(test.rank, test.number)
+			s := layout.NewSeat(test.rank, 0, test.number)
 
 			if s == nil {
 				t.Error("expected seat, got nil")
@@ -156,4 +107,328 @@ func TestNewSeat(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAvailableSeatsByRank(t *testing.T) {
+	t.Parallel()
+
+	r1 := layout.NewRow()
+	r1.AddSeat(
+		layout.NewSeat(1, 0, 1).Book(),
+		layout.NewSeat(1, 1, 2),
+	)
+
+	r2 := layout.NewRow()
+	r2.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 2).Book(),
+	)
+
+	r3 := layout.NewRow()
+	r3.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(2, 1, 2),
+	)
+
+	s1 := layout.NewSection()
+	s1.AddRow(r1, r2)
+
+	s2 := layout.NewSection()
+	s2.AddRow(r3)
+
+	l := layout.NewLayout()
+
+	l.AddSection(s1, s2)
+
+	tests := []struct {
+		name string
+		rank int
+		want int
+	}{
+		{"simple rank one", 1, 3},
+		{"simple rank two", 2, 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := l.AvailableSeatsByRank(test.rank)
+
+			if len(got) != test.want {
+				t.Errorf("expected %d available seats, got %d", test.want, len(got))
+			}
+
+		})
+	}
+
+}
+
+func TestConsecutiveAvailableSeatsByRank(t *testing.T) {
+	t.Parallel()
+
+	r1 := layout.NewRow()
+	r1.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r2 := layout.NewRow()
+	r2.AddSeat(
+		layout.NewSeat(1, 0, 1).Book(),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2).Book(),
+	)
+
+	r3 := layout.NewRow()
+	r3.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3).Book(),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6).Book(),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r4 := layout.NewRow()
+	r4.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5).Book(),
+		layout.NewSeat(1, 3, 6).Book(),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r5 := layout.NewRow()
+	r5.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4).Book(),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r6 := layout.NewRow()
+	r6.AddSeat(
+		layout.NewSeat(2, 0, 1),
+		layout.NewSeat(2, 1, 3),
+		layout.NewSeat(2, 2, 5),
+	)
+
+	s1 := layout.NewSection()
+	s1.AddRow(r1, r2, r3)
+
+	s2 := layout.NewSection()
+	s2.AddRow(r4, r5, r6)
+
+	l := layout.NewLayout()
+	l.AddSection(s1, s2)
+
+	tests := []struct {
+		name string
+
+		rank int
+		want [][]*layout.Seat
+	}{
+		{
+			"simple",
+			1,
+			[][]*layout.Seat{
+				{
+					layout.NewSeat(1, 0, 1),
+					layout.NewSeat(1, 1, 3),
+					layout.NewSeat(1, 2, 5),
+					layout.NewSeat(1, 3, 6),
+					layout.NewSeat(1, 4, 4),
+					layout.NewSeat(1, 5, 2),
+				},
+				{
+					layout.NewSeat(1, 1, 3),
+					layout.NewSeat(1, 2, 5),
+					layout.NewSeat(1, 3, 6),
+					layout.NewSeat(1, 4, 4),
+				},
+				{
+					layout.NewSeat(1, 0, 1),
+				},
+				{
+					layout.NewSeat(1, 2, 5),
+				},
+				{
+					layout.NewSeat(1, 4, 4),
+					layout.NewSeat(1, 5, 2),
+				},
+				{
+					layout.NewSeat(1, 0, 1),
+					layout.NewSeat(1, 1, 3),
+				},
+				{
+					layout.NewSeat(1, 4, 4),
+					layout.NewSeat(1, 5, 2),
+				},
+				{
+					layout.NewSeat(1, 0, 1),
+					layout.NewSeat(1, 1, 3),
+					layout.NewSeat(1, 2, 5),
+					layout.NewSeat(1, 3, 6),
+				},
+				{
+					layout.NewSeat(1, 5, 2),
+				},
+			},
+		},
+		{
+			"simple",
+			2,
+			[][]*layout.Seat{
+				{
+					layout.NewSeat(2, 0, 1),
+					layout.NewSeat(2, 1, 3),
+					layout.NewSeat(2, 2, 5),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := l.ConsecutiveAvailableSeatsByRank(test.rank)
+			compareAvailableSeatLists(t, test.want, got)
+		})
+	}
+
+}
+
+func compareAvailableSeatLists(t *testing.T, want, got [][]*layout.Seat) {
+	if len(got) != len(want) {
+		t.Errorf("expected %d seats, got %d", len(want), len(got))
+	}
+
+	for i := range want {
+
+		if len(got[i]) != len(want[i]) {
+			t.Errorf("expected %d seats, got %d", len(want[i]), len(got[i]))
+		}
+
+		for j := range want[i] {
+			if got[i][j].Rank() != want[i][j].Rank() {
+				t.Errorf("expected rank %d, got %d", want[i][j].Rank(), got[i][j].Rank())
+			}
+
+			if got[i][j].Number() != want[i][j].Number() {
+				t.Errorf("expected number %d, got %d", want[i][j].Number(), got[i][j].Number())
+			}
+		}
+	}
+}
+
+// TestAvailableSeatsByRank_Empty tests that an empty layout returns an empty
+// list.
+func TestAvailableSeatsByRank_Empty(t *testing.T) {
+	l := layout.NewLayout()
+
+	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
+		t.Errorf("expected 0 seats, got %d", len(got))
+	}
+}
+
+// TestAvailableSeatsByRank_NoRows tests that an empty section returns an
+// empty list.
+func TestAvailableSeatsByRank_NoRows(t *testing.T) {
+	s := layout.NewSection()
+
+	l := layout.NewLayout()
+	l.AddSection(s)
+
+	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
+		t.Errorf("expected 0 seats, got %d", len(got))
+	}
+}
+
+// TestAvailableSeatsByRank_NoSeats tests that a section with no seats returns
+// an empty list.
+func TestAvailableSeatsByRank_NoSeats(t *testing.T) {
+
+	s := layout.NewSection()
+	s.AddRow(layout.NewRow())
+
+	l := layout.NewLayout()
+	l.AddSection(s)
+
+	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
+		t.Errorf("expected 0 seats, got %d", len(got))
+	}
+}
+
+func CreateMockLayout() *layout.Layout {
+
+	r1 := layout.NewRow()
+	r1.AddSeat(
+		layout.NewSeat(1, 0, 1).Book(),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4).Book(),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r2 := layout.NewRow()
+	r2.AddSeat(
+		layout.NewSeat(1, 0, 1).Book(),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2).Book(),
+	)
+
+	r3 := layout.NewRow()
+	r3.AddSeat(
+		layout.NewSeat(1, 0, 1).Book(),
+		layout.NewSeat(1, 1, 3).Book(),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6).Book(),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r4 := layout.NewRow()
+	r4.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5).Book(),
+		layout.NewSeat(1, 3, 6).Book(),
+		layout.NewSeat(1, 4, 4),
+		layout.NewSeat(1, 5, 2),
+	)
+
+	r5 := layout.NewRow()
+	r5.AddSeat(
+		layout.NewSeat(1, 0, 1),
+		layout.NewSeat(1, 1, 3),
+		layout.NewSeat(1, 2, 5),
+		layout.NewSeat(1, 3, 6),
+		layout.NewSeat(1, 4, 4).Book(),
+		layout.NewSeat(1, 5, 2).Book(),
+	)
+
+	s1 := layout.NewSection()
+	s1.AddRow(r1, r2, r3)
+	s1.SetName("A")
+
+	s2 := layout.NewSection()
+	s2.AddRow(r4, r5)
+	s2.SetName("B")
+
+	l := layout.NewLayout()
+	l.AddSection(s1, s2)
+
+	return l
 }
