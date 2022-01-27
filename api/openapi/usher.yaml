@@ -1,0 +1,448 @@
+openapi: "3.0.2"
+info:
+  title: API Title
+  version: "1.0"
+servers:
+  - url: https://{hostname}/api/v1
+    variables:
+      hostname:
+        default: localhost
+
+tags:
+  - name: Admin
+  - name: User
+  - name: Events
+  - name: Checkout
+
+paths:
+  /events:
+    get:
+      operationId: "GetEvents"
+      description: "Returns list of events"
+      tags:
+        - User
+        - Events
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventsResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{eventID}:
+    get:
+      operationId: "GetEvent"
+      description: "Returns event"
+      tags:
+        - User
+        - Events
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{eventID}/seats:
+    post:
+      operationId: "GetEventSeats"
+      description: "Returns list of event seats"
+      tags:
+        - User
+        - Events
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventSeatsRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventSeatsResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{userID}:
+    get:
+      operationId: "GetUser"
+      description: "Returns user"
+      tags:
+        - User
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{userID}/tickets:
+    get:
+      operationId: "GetUserTickets"
+      description: "Returns user tickets"
+      tags:
+        - User
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserTicketsResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{userID}/tickets/{ticketID}:
+    get:
+      operationId: "GetUserTicket"
+      description: "Returns user ticket"
+      tags:
+        - User
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTicketResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /checkout:
+    post:
+      operationId: "Checkout"
+      description: "Checkout"
+      tags:
+        - User
+        - Checkout
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/events/{eventID}/tickets:
+    get:
+      operationId: "GetEventTickets"
+      description: "Returns list of tickets for event"
+      tags:
+        - Admin
+        - Events
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TicketsResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/events/{eventID}/tickets/{ticketID}:
+    get:
+      operationId: "GetEventTicket"
+      description: "Returns ticket for event"
+      tags:
+        - Admin
+        - Events
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/events/{eventID}/reserve:
+    post:
+      operationId: "ReserveEvent"
+      description: "Reserve event"
+      tags:
+        - Admin
+        - Events
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReserveEventResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    # Layout
+    Seat:
+      type: object
+      properties:
+        position:
+          type: object
+          properties:
+            row:
+              type: integer
+            col:
+              type: integer
+        number:
+          type: string
+        features:
+          type: number
+        rank:
+          type: number
+        available:
+          type: boolean
+
+    Row:
+      type: object
+      properties:
+        name:
+          type: string
+        order:
+          type: integer
+        seats:
+          type: array
+          items:
+            $ref: "#/components/schemas/Seat"
+
+    Section:
+      type: object
+      properties:
+        name:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/Row"
+
+    Hall:
+      type: object
+      properties:
+        name:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Section"
+
+    # Ticket
+    Ticket:
+      type: object
+      required: ["id"]
+      properties:
+        id:
+          type: string
+        event:
+          $ref: "#/components/schemas/Event"
+        user:
+          $ref: "#/components/schemas/User"
+
+    UserTicketsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Ticket"
+  
+    UserTicketResponse:
+      $ref: "#/components/schemas/Ticket"
+    
+    TicketsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Ticket"
+    
+    TicketResponse:
+      $ref: "#/components/schemas/Ticket"
+            
+    #  Event
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        location:
+          $ref: "#/components/schemas/Hall"
+
+    EventsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Event"
+
+    EventResponse:
+      $ref: "#/components/schemas/Event"
+
+    EventSeatsResponse:
+      type: object
+      properties:
+        remaining:
+          type: integer
+        reserved:
+          type: integer 
+
+    EventSeatsRequest:
+      type: object
+      properties:
+        rank:
+          type: integer
+        features:
+          type: integer
+
+    # User
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+    
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        tickets:
+          type: array
+          items: 
+            $ref: "#/components/schemas/Ticket"
+
+  # Checkout
+    CheckoutRequest:
+      type: object
+      properties:
+        count:
+          type: integer
+        event_id:
+          type: string
+        preferences:
+          type: object
+          properties:
+            features:
+              type: integer
+            rank:
+              type: integer
+    
+    CheckoutResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          $ref: "#/components/schemas/Event"
+        user:
+          $ref: "#/components/schemas/User"
+        count:
+          type: integer
+        preferences:
+          type: object
+          properties:
+            features:
+              type: integer
+            rank:
+              type: integer
+
+    # Reserve
+
+    ReserveEventResponse:
+      type: object
+      properties:
+        event:
+          $ref: "#/components/schemas/Event"
+        remaining:
+          type: integer
+          
