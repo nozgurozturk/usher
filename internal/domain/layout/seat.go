@@ -129,15 +129,6 @@ func (s *seat) Feature() SeatFeature {
 	return s.feature
 }
 
-const (
-	// Red color
-	red = "\033[31m"
-	// Green color
-	green = "\033[32m"
-	// Reset color
-	reset = "\033[0m"
-)
-
 func (s *seat) String() string {
 	rep := strconv.Itoa(s.Rank())
 	if !s.Available() {
