@@ -1,7 +1,6 @@
 package layout_test
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -212,8 +211,6 @@ func TestFilter(t *testing.T) {
 		mockSectionOne,
 		mockSectionTwo, // has feature high
 	})
-
-	fmt.Printf("%+v\n", mockHall)
 
 	tests := []struct {
 		name   string

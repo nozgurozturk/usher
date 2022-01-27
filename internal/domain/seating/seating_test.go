@@ -4,99 +4,19 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/nozgurozturk/usher/internal/domain/group"
 	"github.com/nozgurozturk/usher/internal/domain/layout"
-	"github.com/nozgurozturk/usher/internal/domain/packing"
 	"github.com/nozgurozturk/usher/internal/domain/seating"
 )
 
-type mockGroup struct {
-	size int
-}
-
-func (g *mockGroup) Size() int {
-	return g.size
-}
-
-func createMockGroup(size int) packing.Group {
-	return &mockGroup{size}
-}
-func TestAllocateSeats(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name       string
-		users      []int
-		isReversed bool
-		want       [][]int
-		err        error
-	}{
-		{"simple",
-			[]int{1, 3, 4, 4, 5, 1, 2, 4},
-			false,
-			[][]int{
-				{1, 2, 2, 2, 3, 3, 3, 3},
-				{4, 4, 4, 4, 5, 5, 5, 5},
-				{5, 6, 7, 7, 8, 8, 8, 8},
-			},
-			nil,
-		},
-		{"reversed order",
-			[]int{1, 3, 4, 4, 5, 1, 2, 4},
-			true,
-			[][]int{
-				{1, 2, 2, 2, 3, 3, 3, 3},
-				{5, 5, 5, 5, 4, 4, 4, 4},
-				{5, 6, 7, 7, 8, 8, 8, 8},
-			},
-			nil,
-		},
-		{"overflow",
-			[]int{2, 3, 4, 4, 5, 1, 2, 4},
-			false,
-			nil,
-			seating.ErrOverflow,
-		},
-		{"partially filled",
-			[]int{1, 3, 4, 4, 5, 1, 2, 1},
-			false,
-			[][]int{
-				{1, 2, 2, 2, 3, 3, 3, 3},
-				{4, 4, 4, 4, 5, 5, 5, 5},
-				{5, 6, 7, 7, 8, 0, 0, 0},
-			},
-			nil,
-		},
-		{"partially reversed filled",
-			[]int{1, 3, 4, 4, 2},
-			true,
-			[][]int{
-				{1, 2, 2, 2, 3, 3, 3, 3},
-				{0, 0, 5, 5, 4, 4, 4, 4},
-				{0, 0, 0, 0, 0, 0, 0, 0},
-			},
-			nil,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := seating.AllocateSeats(test.users, test.isReversed)
-			if err != test.err {
-				t.Errorf("got error %v, want nil", err)
-			}
-			compareMatrix(t, got, test.want)
-		})
-	}
-}
-
-func TestAllocateSeatsInLayout(t *testing.T) {
+func TestReserveSeatsForGroups(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name                string
 		sectionRowSeatSizes [3]int
 		alreadyBooked       [][3]int
-		groups              []packing.Group
+		groups              []group.Group
 		rank                int
 		err                 error
 	}{
@@ -112,7 +32,7 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 				{3, 0, 1},
 				{4, 1, 1},
 			},
-			[]packing.Group{createMockGroup(3), createMockGroup(2), createMockGroup(2), createMockGroup(1), createMockGroup(3), createMockGroup(1), createMockGroup(1)},
+			[]group.Group{group.NewGroup(3, 1), group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(1, 1), group.NewGroup(3, 1), group.NewGroup(1, 1), group.NewGroup(1, 1)},
 			1,
 			nil,
 		},
@@ -122,7 +42,7 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 			[][3]int{
 				{0, 1, 0},
 			},
-			[]packing.Group{createMockGroup(2), createMockGroup(2), createMockGroup(2), createMockGroup(2)},
+			[]group.Group{group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(2, 1)},
 			1,
 			seating.ErrNotEnoughSpace,
 		},
@@ -132,7 +52,7 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 			[][3]int{
 				{0, 1, 0},
 			},
-			[]packing.Group{createMockGroup(3)},
+			[]group.Group{group.NewGroup(3, 1)},
 			1,
 			seating.ErrNotEnoughSeats,
 		},
@@ -141,14 +61,14 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 	for _, test := range tests {
 		totalSeats := test.sectionRowSeatSizes[0] * test.sectionRowSeatSizes[1] * test.sectionRowSeatSizes[2]
 		bookedSeats := len(test.alreadyBooked)
-		remainingSize := totalSeats - bookedSeats - totalSizeOfGroup(test.groups)
+		remainingSize := totalSeats - bookedSeats - totalSize(test.groups)
 
 		testLayout := createLayout(test.sectionRowSeatSizes[0], test.sectionRowSeatSizes[1], test.sectionRowSeatSizes[2])
 		bookSeats(testLayout, test.alreadyBooked)
 
 		filter := layout.NewFilter().WithRank(test.rank).WithAvailable(true)
 		t.Run(test.name, func(t *testing.T) {
-			l, err := seating.AllocateSeatsInLayout(test.groups, testLayout, filter)
+			l, err := seating.ReserveSeatsForGroups(test.groups, testLayout)
 
 			if !errors.Is(err, test.err) {
 				t.Errorf("got %v, want %v", err, test.err)
@@ -161,32 +81,9 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 		})
 
 	}
-
 }
 
-// Compare two matrixes.
-func compareMatrix(t *testing.T, got, want [][]int) {
-	t.Helper()
-
-	if len(got) != len(want) {
-		t.Errorf("got %v, want %v", got, want)
-	}
-
-	for i, row := range got {
-		if len(row) != len(want[i]) {
-			t.Errorf("got %v, want %v", got, want)
-		}
-
-		for j, col := range row {
-			if col != want[i][j] {
-				t.Errorf("got %v, want %v", got, want)
-			}
-		}
-	}
-}
-
-// totalSizeOfGroups returns the total size of a group.
-func totalSizeOfGroup(group []packing.Group) int {
+func totalSize(group []group.Group) int {
 	total := 0
 
 	for _, g := range group {

@@ -114,6 +114,8 @@ func (f *filter) WithAvailable(available bool) Filter {
 // FilterSeats filters the seats.
 func (f *filter) FilterSeat(seat Seat) Seat {
 
+	// fmt.Println("filter", f.feature, seat.Feature(), seat.HasFeature(f.feature), seat.String())
+
 	if f.feature > SeatFeatureDefault && !seat.HasFeature(f.feature) {
 		return nil
 	}
