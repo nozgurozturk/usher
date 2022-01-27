@@ -1,5 +1,7 @@
 package packing
 
+import "github.com/nozgurozturk/usher/internal/domain/group"
+
 type Group interface {
 	Size() int
 }
@@ -9,6 +11,35 @@ type PackingFunc func([]Group, int) [][]Group
 // Packing is the packing of the groups with given groups and function
 func PackGroups(groups []Group, capacity int, fn PackingFunc) [][]Group {
 	return fn(groups, capacity)
+}
+
+func ToPackingGroups(groups []group.Group) []Group {
+	g := make([]Group, len(groups))
+	for i := range groups {
+		g[i] = groups[i]
+	}
+	return g
+}
+
+func ToGroups(groups [][]Group) [][]group.Group {
+	g := make([][]group.Group, len(groups))
+
+	for i, packedGroup := range groups {
+		g[i] = make([]group.Group, len(packedGroup))
+		for j, pg := range packedGroup {
+			g[i][j] = pg.(group.Group)
+		}
+	}
+	return g
+}
+
+func PackGroupsOfUser(groups []group.Group, capacity int, fn PackingFunc) [][]group.Group {
+	g := ToPackingGroups(groups)
+
+	packedGroups := PackGroups(g, capacity, fn)
+
+	return ToGroups(packedGroups)
+
 }
 
 // NextFit is the next fit packing algorithm.
