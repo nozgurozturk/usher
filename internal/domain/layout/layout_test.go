@@ -1,434 +1,409 @@
 package layout_test
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/nozgurozturk/usher/internal/domain/layout"
 )
 
-func TestNewLayout(t *testing.T) {
+type mockRowMap []string
+type mockSectionMap []mockRowMap
+type mockHallMap []mockSectionMap
+
+func TestNewSeat(t *testing.T) {
 	t.Parallel()
 
-	layout := layout.NewLayout()
+	tests := []struct {
+		name     string
+		row, col int
+		number   int
+		rank     int
+		features []layout.SeatFeature
+	}{
+		{"simple", 1, 1, 1, 1, nil},
+		{"with features", 1, 1, 1, 1, []layout.SeatFeature{layout.SeatFeatureHigh, layout.SeatFeatureFront}},
+	}
 
-	if layout == nil {
-		t.Error("expected layout, got nil")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			sb := layout.NewSeatBuilder().
+				WithPosition(test.row, test.col).
+				WithNumber(test.number).
+				WithRank(test.rank)
+
+			if len(test.features) > 0 {
+				for _, f := range test.features {
+					sb.WithFeature(f)
+				}
+			}
+
+			seat := sb.Build()
+
+			seatRow, seatCol := seat.Position()
+			if seatRow != test.row {
+				t.Errorf("seat.Position()[0] = %d, want %d", seatRow, test.row)
+			}
+
+			if seatCol != test.col {
+				t.Errorf("seat.Position()[1] = %d, want %d", seatCol, test.col)
+			}
+
+			if seat.Number() != test.number {
+				t.Errorf("seat.Number() = %d, want %d", seat.Number(), test.number)
+			}
+
+			if seat.Rank() != test.rank {
+				t.Errorf("seat.Rank() = %d, want %d", seat.Rank(), test.rank)
+			}
+
+			if len(test.features) > 0 {
+				for _, f := range test.features {
+					if !seat.HasFeature(f) {
+						t.Errorf("seat.HasFeature(%v) = false, want true", f)
+					}
+				}
+			}
+
+		})
+	}
+}
+
+func TestNewRow(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		rowName string
+		order   int
+		seats   []layout.Seat
+	}{
+		{
+			"simple", "1", 1, nil,
+		},
+		{
+			"with seats", "1", 1,
+			[]layout.Seat{
+				layout.NewSeatBuilder().Build(),
+				layout.NewSeatBuilder().Build(),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			row := layout.NewRowBuilder().
+				WithName(test.rowName).
+				WithOrder(test.order).
+				WithSeat(test.seats...).
+				Build()
+
+			if row.Name() != test.rowName {
+				t.Errorf("row.Name() = %s, want %s", row.Name(), test.rowName)
+			}
+
+			if row.Order() != test.order {
+				t.Errorf("row.Order() = %d, want %d", row.Order(), test.order)
+			}
+
+			if len(row.Seats()) != len(test.seats) {
+				t.Errorf("len(row.Seats()) = %d, want %d", len(row.Seats()), len(test.seats))
+			}
+		})
 	}
 }
 
 func TestNewSection(t *testing.T) {
 	t.Parallel()
 
-	s := layout.NewSection()
-
-	if s == nil {
-		t.Error("expected section, got nil")
-	}
-}
-
-func TestSectionName(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
-		name string
-		want string
+		name        string
+		sectionName string
+		rows        []layout.Row
 	}{
-		{"simple", "section"},
-		{"empty", ""},
+		{
+			"simple", "1", nil,
+		},
+		{
+			"with rows", "1",
+			[]layout.Row{
+				layout.NewRowBuilder().Build(),
+				layout.NewRowBuilder().Build(),
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := layout.NewSection()
+			section := layout.NewSectionBuilder().
+				WithName(test.sectionName).
+				WithRow(test.rows...).
+				Build()
 
-			s.SetName(test.want)
+			if section.Name() != test.sectionName {
+				t.Errorf("section.Name() = %s, want %s", section.Name(), test.sectionName)
+			}
 
-			if s.Name() != test.want {
-				t.Errorf("expected %s, got %s", test.want, s.Name())
+			if len(section.Rows()) != len(test.rows) {
+				t.Errorf("len(section.Rows()) = %d, want %d", len(section.Rows()), len(test.rows))
 			}
 		})
 	}
 }
 
-func TestAddSection(t *testing.T) {
+func TestNewHall(t *testing.T) {
 	t.Parallel()
 
-	l := layout.NewLayout()
-	prevSize := len(l.Sections())
+	tests := []struct {
+		name     string
+		hallName string
+		sections []layout.Section
+	}{
+		{
+			"simple", "main", nil,
+		},
+		{
+			"with sections", "main",
+			[]layout.Section{
+				layout.NewSectionBuilder().Build(),
+				layout.NewSectionBuilder().Build(),
+			},
+		},
+	}
 
-	s := layout.NewSection()
-	l.AddSection(s)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hall := layout.NewHallBuilder().
+				WithName(test.hallName).
+				WithSection(test.sections...).
+				Build()
 
-	if len(l.Sections()) != prevSize+1 {
-		t.Errorf("expected %d section, got %d", prevSize+1, len(l.Sections()))
+			if hall.Name() != test.hallName {
+				t.Errorf("hall.Name() = %s, want %s", hall.Name(), test.hallName)
+			}
+
+			if len(hall.Sections()) != len(test.sections) {
+				t.Errorf("len(hall.Sections()) = %d, want %d", len(hall.Sections()), len(test.sections))
+			}
+		})
 	}
 }
 
-func TestAddRow(t *testing.T) {
+func TestFilter(t *testing.T) {
 	t.Parallel()
 
-	s := layout.NewSection()
-
-	prevSize := len(s.Rows())
-
-	s.AddRow(layout.NewRow())
-
-	if len(s.Rows()) != prevSize+1 {
-		t.Errorf("expected %d row, got %d", prevSize+1, len(s.Rows()))
+	mockSectionOne := mockSectionMap{
+		{"X", "1", "1", "1", "1", "1"}, // X is a seat with booked before // "1" represents a seat rank
+		{"X", "1", "1", "1", "1", "X"},
+		{"X", "1", "X", "X", "1", "1"},
+		{"1", "1", "X", "X", "1", "1"},
+		{"1", "1", "1", "1", "X", "X"},
 	}
-}
 
-func TestNewSeat(t *testing.T) {
-	t.Parallel()
+	mockSectionTwo := mockSectionMap{
+		{"1", "1", "X", "X", "1", "1"},
+		{"1", "1", "1", "1", "X", "X"},
+		{"2", "2", "2", "2", "2", "2"},
+	}
+
+	mockHall := CreateMockHall("mockHall", mockHallMap{
+		mockSectionOne,
+		mockSectionTwo, // has feature high
+	})
+
+	fmt.Printf("%+v\n", mockHall)
 
 	tests := []struct {
 		name   string
-		rank   int
-		number int
+		filter layout.Filter
+		want   int // number of seats
 	}{
-		{"simple", 1, 1},
-		{"simple", 2, 3},
+		{
+			"filter by rank one",
+			layout.NewFilter().WithRank(1),
+			42,
+		},
+		{
+			"filter by rank two",
+			layout.NewFilter().WithRank(2),
+			6,
+		},
+		{
+			"filter by availability",
+			layout.NewFilter().WithAvailable(true),
+			34,
+		},
+		{
+			"filter by feature front",
+			layout.NewFilter().WithFeature(layout.SeatFeatureFront),
+			12,
+		},
+		{
+			"filter by feature high",
+			layout.NewFilter().WithFeature(layout.SeatFeatureHigh),
+			18,
+		},
+		{
+			"filter by feature aisle",
+			layout.NewFilter().WithFeature(layout.SeatFeatureAisle),
+			16,
+		},
+		{
+			"composite filter",
+			layout.NewFilter().
+				WithRank(1).
+				WithAvailable(true).
+				WithFeature(layout.SeatFeatureFront),
+			9,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := layout.NewSeat(test.rank, 0, test.number)
 
-			if s == nil {
-				t.Error("expected seat, got nil")
-			}
-
-			if s.Rank() != test.rank {
-				t.Errorf("expected rank 1, got %d", s.Rank())
-			}
-
-			if s.Number() != test.number {
-				t.Errorf("expected number 1, got %d", s.Number())
-			}
-		})
-	}
-}
-
-func TestAvailableSeatsByRank(t *testing.T) {
-	t.Parallel()
-
-	r1 := layout.NewRow()
-	r1.AddSeat(
-		layout.NewSeat(1, 0, 1).Book(),
-		layout.NewSeat(1, 1, 2),
-	)
-
-	r2 := layout.NewRow()
-	r2.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 2).Book(),
-	)
-
-	r3 := layout.NewRow()
-	r3.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(2, 1, 2),
-	)
-
-	s1 := layout.NewSection()
-	s1.AddRow(r1, r2)
-
-	s2 := layout.NewSection()
-	s2.AddRow(r3)
-
-	l := layout.NewLayout()
-
-	l.AddSection(s1, s2)
-
-	tests := []struct {
-		name string
-		rank int
-		want int
-	}{
-		{"simple rank one", 1, 3},
-		{"simple rank two", 2, 1},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := l.AvailableSeatsByRank(test.rank)
+			got := layout.FilteredSeatsInHall(mockHall, test.filter)
 
 			if len(got) != test.want {
-				t.Errorf("expected %d available seats, got %d", test.want, len(got))
+				t.Errorf("len(got) = %d, want %d", len(got), test.want)
 			}
-
 		})
 	}
-
 }
 
-func TestConsecutiveAvailableSeatsByRank(t *testing.T) {
+func TestConsecutiveAvailableSeats(t *testing.T) {
 	t.Parallel()
 
-	r1 := layout.NewRow()
-	r1.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2),
-	)
+	mockSectionOne := mockSectionMap{
+		{"X", "1", "1", "1", "1", "1"}, // X is a seat with booked before // "1" represents a seat rank
+		{"X", "1", "1", "1", "1", "X"},
+		{"X", "1", "X", "X", "1", "1"},
+		{"1", "1", "X", "X", "1", "1"},
+		{"1", "1", "1", "1", "X", "X"},
+	}
 
-	r2 := layout.NewRow()
-	r2.AddSeat(
-		layout.NewSeat(1, 0, 1).Book(),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2).Book(),
-	)
+	mockSectionTwo := mockSectionMap{
+		{"1", "1", "X", "X", "1", "1"},
+		{"1", "1", "1", "1", "X", "X"},
+		{"2", "2", "2", "2", "2", "2"},
+	}
 
-	r3 := layout.NewRow()
-	r3.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3).Book(),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6).Book(),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r4 := layout.NewRow()
-	r4.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5).Book(),
-		layout.NewSeat(1, 3, 6).Book(),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r5 := layout.NewRow()
-	r5.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4).Book(),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r6 := layout.NewRow()
-	r6.AddSeat(
-		layout.NewSeat(2, 0, 1),
-		layout.NewSeat(2, 1, 3),
-		layout.NewSeat(2, 2, 5),
-	)
-
-	s1 := layout.NewSection()
-	s1.AddRow(r1, r2, r3)
-
-	s2 := layout.NewSection()
-	s2.AddRow(r4, r5, r6)
-
-	l := layout.NewLayout()
-	l.AddSection(s1, s2)
+	mockHall := CreateMockHall("mockHall", mockHallMap{
+		mockSectionOne,
+		mockSectionTwo, // has feature high
+	})
 
 	tests := []struct {
-		name string
-
-		rank int
-		want [][]*layout.Seat
+		name   string
+		filter layout.Filter
+		want   []int // number of seats
 	}{
 		{
-			"simple",
-			1,
-			[][]*layout.Seat{
-				{
-					layout.NewSeat(1, 0, 1),
-					layout.NewSeat(1, 1, 3),
-					layout.NewSeat(1, 2, 5),
-					layout.NewSeat(1, 3, 6),
-					layout.NewSeat(1, 4, 4),
-					layout.NewSeat(1, 5, 2),
-				},
-				{
-					layout.NewSeat(1, 1, 3),
-					layout.NewSeat(1, 2, 5),
-					layout.NewSeat(1, 3, 6),
-					layout.NewSeat(1, 4, 4),
-				},
-				{
-					layout.NewSeat(1, 0, 1),
-				},
-				{
-					layout.NewSeat(1, 2, 5),
-				},
-				{
-					layout.NewSeat(1, 4, 4),
-					layout.NewSeat(1, 5, 2),
-				},
-				{
-					layout.NewSeat(1, 0, 1),
-					layout.NewSeat(1, 1, 3),
-				},
-				{
-					layout.NewSeat(1, 4, 4),
-					layout.NewSeat(1, 5, 2),
-				},
-				{
-					layout.NewSeat(1, 0, 1),
-					layout.NewSeat(1, 1, 3),
-					layout.NewSeat(1, 2, 5),
-					layout.NewSeat(1, 3, 6),
-				},
-				{
-					layout.NewSeat(1, 5, 2),
-				},
-			},
+			"filter by rank one",
+			layout.NewFilter().WithRank(1),
+			[]int{6, 6, 6, 6, 6, 6, 6},
 		},
 		{
-			"simple",
-			2,
-			[][]*layout.Seat{
-				{
-					layout.NewSeat(2, 0, 1),
-					layout.NewSeat(2, 1, 3),
-					layout.NewSeat(2, 2, 5),
-				},
-			},
+			"filter by rank two",
+			layout.NewFilter().WithRank(2),
+			[]int{6},
+		},
+		{
+			"filter by availability",
+			layout.NewFilter().WithAvailable(true),
+			[]int{5, 4, 1, 2, 2, 2, 4, 2, 2, 4, 6},
+		},
+		{
+			"filter by availability and rank",
+			layout.NewFilter().WithAvailable(true).WithRank(1),
+			[]int{5, 4, 1, 2, 2, 2, 4, 2, 2, 4},
+		},
+		{
+			"filter by feature front",
+			layout.NewFilter().WithFeature(layout.SeatFeatureFront),
+			[]int{6, 6},
+		},
+		{
+			"filter by feature high",
+			layout.NewFilter().WithFeature(layout.SeatFeatureHigh),
+			[]int{6, 6, 6},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := l.ConsecutiveAvailableSeatsByRank(test.rank)
-			compareAvailableSeatLists(t, test.want, got)
+
+			got := layout.ConsecutiveFilteredSeatsInHall(mockHall, test.filter)
+
+			for i := range got {
+
+				if len(got[i]) != test.want[i] {
+					t.Errorf("len(got[%d]) = %d, want %d", i, len(got[i]), test.want[i])
+				}
+			}
+
 		})
 	}
-
 }
 
-func compareAvailableSeatLists(t *testing.T, want, got [][]*layout.Seat) {
-	if len(got) != len(want) {
-		t.Errorf("expected %d seats, got %d", len(want), len(got))
-	}
+func CreateMockHall(name string, hallMap mockHallMap) layout.Hall {
 
-	for i := range want {
+	hallBuilder := layout.NewHallBuilder().WithName(name)
 
-		if len(got[i]) != len(want[i]) {
-			t.Errorf("expected %d seats, got %d", len(want[i]), len(got[i]))
+	sections := make([]layout.Section, len(hallMap))
+
+	for sectionIndex, sectionRows := range hallMap {
+		sectionName := ""
+		if sectionIndex == 0 {
+			sectionName = "Main"
+		} else {
+			sectionName = "Balcony"
 		}
+		sectionBuilder := layout.NewSectionBuilder().WithName(sectionName)
+		rows := make([]layout.Row, len(sectionRows))
 
-		for j := range want[i] {
-			if got[i][j].Rank() != want[i][j].Rank() {
-				t.Errorf("expected rank %d, got %d", want[i][j].Rank(), got[i][j].Rank())
-			}
+		for rowIndex, rowSeats := range sectionRows {
+			rowName := strconv.Itoa(rowIndex + 1)
+			rowBuilder := layout.NewRowBuilder().WithName(rowName).WithOrder(rowIndex)
+			seats := make([]layout.Seat, len(rowSeats))
 
-			if got[i][j].Number() != want[i][j].Number() {
-				t.Errorf("expected number %d, got %d", want[i][j].Number(), got[i][j].Number())
+			for seatIndex, seat := range rowSeats {
+				seatBuilder := layout.NewSeatBuilder().WithPosition(rowIndex, seatIndex).WithNumber(seatIndex + 1)
+
+				if rank, err := strconv.Atoi(seat); err == nil {
+					seatBuilder.WithRank(rank)
+				} else {
+					seatBuilder.WithRank(1)
+				}
+
+				if rowName == "1" {
+					seatBuilder.WithFeature(layout.SeatFeatureFront)
+				}
+
+				if seatIndex == 0 || len(rowSeats)-1 == seatIndex {
+					seatBuilder.WithFeature(layout.SeatFeatureAisle)
+				}
+
+				if sectionIndex > 0 {
+					seatBuilder.WithFeature(layout.SeatFeatureHigh)
+				}
+
+				s := seatBuilder.Build()
+
+				if seat == "X" {
+					s.Book()
+				}
+
+				seats[seatIndex] = s
+
 			}
+			r := rowBuilder.WithName(rowName).WithSeat(seats...).Build()
+			rows[rowIndex] = r
 		}
+		s := sectionBuilder.WithRow(rows...).Build()
+		sections[sectionIndex] = s
 	}
-}
-
-// TestAvailableSeatsByRank_Empty tests that an empty layout returns an empty
-// list.
-func TestAvailableSeatsByRank_Empty(t *testing.T) {
-	l := layout.NewLayout()
-
-	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
-		t.Errorf("expected 0 seats, got %d", len(got))
-	}
-}
-
-// TestAvailableSeatsByRank_NoRows tests that an empty section returns an
-// empty list.
-func TestAvailableSeatsByRank_NoRows(t *testing.T) {
-	s := layout.NewSection()
-
-	l := layout.NewLayout()
-	l.AddSection(s)
-
-	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
-		t.Errorf("expected 0 seats, got %d", len(got))
-	}
-}
-
-// TestAvailableSeatsByRank_NoSeats tests that a section with no seats returns
-// an empty list.
-func TestAvailableSeatsByRank_NoSeats(t *testing.T) {
-
-	s := layout.NewSection()
-	s.AddRow(layout.NewRow())
-
-	l := layout.NewLayout()
-	l.AddSection(s)
-
-	if got := l.ConsecutiveAvailableSeatsByRank(1); len(got) != 0 {
-		t.Errorf("expected 0 seats, got %d", len(got))
-	}
-}
-
-func CreateMockLayout() *layout.Layout {
-
-	r1 := layout.NewRow()
-	r1.AddSeat(
-		layout.NewSeat(1, 0, 1).Book(),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4).Book(),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r2 := layout.NewRow()
-	r2.AddSeat(
-		layout.NewSeat(1, 0, 1).Book(),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2).Book(),
-	)
-
-	r3 := layout.NewRow()
-	r3.AddSeat(
-		layout.NewSeat(1, 0, 1).Book(),
-		layout.NewSeat(1, 1, 3).Book(),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6).Book(),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r4 := layout.NewRow()
-	r4.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5).Book(),
-		layout.NewSeat(1, 3, 6).Book(),
-		layout.NewSeat(1, 4, 4),
-		layout.NewSeat(1, 5, 2),
-	)
-
-	r5 := layout.NewRow()
-	r5.AddSeat(
-		layout.NewSeat(1, 0, 1),
-		layout.NewSeat(1, 1, 3),
-		layout.NewSeat(1, 2, 5),
-		layout.NewSeat(1, 3, 6),
-		layout.NewSeat(1, 4, 4).Book(),
-		layout.NewSeat(1, 5, 2).Book(),
-	)
-
-	s1 := layout.NewSection()
-	s1.AddRow(r1, r2, r3)
-	s1.SetName("A")
-
-	s2 := layout.NewSection()
-	s2.AddRow(r4, r5)
-	s2.SetName("B")
-
-	l := layout.NewLayout()
-	l.AddSection(s1, s2)
-
-	return l
+	hallBuilder.WithSection(sections...)
+	return hallBuilder.Build()
 }

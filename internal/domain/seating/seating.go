@@ -87,32 +87,32 @@ func AllocateSeats(groupsOfUser []int, isReversed bool) ([][]int, error) {
 }
 
 // AllocateSeatsInLayout allocates seats for the given group of users and layout.
-func AllocateSeatsInLayout(groups []packing.Group, l *layout.Layout, rank int) (*layout.Layout, error) {
+func AllocateSeatsInLayout(g []packing.Group, l layout.Hall, f layout.Filter) (layout.Hall, error) {
 
 	// Find available list of seats and sort by length.
-	availableListOfSeats := l.ConsecutiveAvailableSeatsByRank(rank)
+	availableListOfSeats := layout.ConsecutiveFilteredSeatsInHall(l, f)
 	sort.SliceStable(availableListOfSeats, func(i, j int) bool {
 		return len(availableListOfSeats[i]) < len(availableListOfSeats[j])
 	})
 
 	// check Total Size of groups is less than the available seats.
-	if err := checkEnoughSpace(availableListOfSeats, groups); err != nil {
+	if err := checkEnoughSpace(availableListOfSeats, g); err != nil {
 		return nil, err
 	}
 
-	gs := make([]packing.Group, len(groups))
-	copy(gs, groups)
+	gropus := make([]packing.Group, len(g))
+	copy(gropus, g)
 
 	// Sort groups by size.
-	sort.SliceStable(gs, func(i, j int) bool {
-		return gs[i].Size() > gs[j].Size()
+	sort.SliceStable(gropus, func(i, j int) bool {
+		return gropus[i].Size() > gropus[j].Size()
 	})
 
 FindAvailableSeat:
 	for _, availableSeats := range availableListOfSeats {
 
 		// Pack groups for the available seats.
-		packedListOfGroups := packing.PackGroups(gs, len(availableSeats), packing.NextFit)
+		packedListOfGroups := packing.PackGroups(gropus, len(availableSeats), packing.NextFit)
 		// Sort list of groups by closes size to the available seats.
 		sort.SliceStable(packedListOfGroups, func(i, j int) bool {
 			return closestToAvailableSeats(packedListOfGroups[i], availableSeats) < closestToAvailableSeats(packedListOfGroups[j], availableSeats)
@@ -133,8 +133,8 @@ FindAvailableSeat:
 					seatIndex++
 				}
 
-				gs = removeGroup(gs, group)
-				if len(gs) == 0 {
+				gropus = removeGroup(gropus, group)
+				if len(gropus) == 0 {
 					break FindAvailableSeat
 				}
 
@@ -146,7 +146,7 @@ FindAvailableSeat:
 
 	}
 
-	if len(gs) > 0 {
+	if len(gropus) > 0 {
 		return nil, ErrNotEnoughSeats
 	}
 
@@ -164,7 +164,7 @@ func removeGroup(groups []packing.Group, group packing.Group) []packing.Group {
 }
 
 // closestToAvailableSeats finds the closest value total size of list of groups to the available seats.
-func closestToAvailableSeats(groups []packing.Group, availableSeats []*layout.Seat) int {
+func closestToAvailableSeats(groups []packing.Group, availableSeats []layout.Seat) int {
 
 	totalSize := 0
 	for _, group := range groups {
@@ -182,7 +182,7 @@ func closestToAvailableSeats(groups []packing.Group, availableSeats []*layout.Se
 }
 
 // checkEnoughSpace checks if there are enough seats to book the given groups.
-func checkEnoughSpace(seats [][]*layout.Seat, groups []packing.Group) error {
+func checkEnoughSpace(seats [][]layout.Seat, groups []packing.Group) error {
 
 	totalSize := 0
 	for _, group := range groups {
@@ -190,7 +190,7 @@ func checkEnoughSpace(seats [][]*layout.Seat, groups []packing.Group) error {
 	}
 
 	// flatten seats
-	flatSeats := make([]*layout.Seat, 0)
+	flatSeats := make([]layout.Seat, 0)
 	for _, row := range seats {
 		flatSeats = append(flatSeats, row...)
 	}

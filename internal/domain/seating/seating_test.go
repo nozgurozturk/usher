@@ -146,15 +146,16 @@ func TestAllocateSeatsInLayout(t *testing.T) {
 		testLayout := createLayout(test.sectionRowSeatSizes[0], test.sectionRowSeatSizes[1], test.sectionRowSeatSizes[2])
 		bookSeats(testLayout, test.alreadyBooked)
 
+		filter := layout.NewFilter().WithRank(test.rank).WithAvailable(true)
 		t.Run(test.name, func(t *testing.T) {
-			l, err := seating.AllocateSeatsInLayout(test.groups, testLayout, test.rank)
+			l, err := seating.AllocateSeatsInLayout(test.groups, testLayout, filter)
 
 			if !errors.Is(err, test.err) {
 				t.Errorf("got %v, want %v", err, test.err)
 			}
 
-			if err == nil && remainingSize != len(l.AvailableSeatsByRank(test.rank)) {
-				t.Errorf("got %d, want %d", len(l.AvailableSeatsByRank(test.rank)), remainingSize)
+			if err == nil && remainingSize != len(layout.FilteredSeatsInHall(l, filter)) {
+				t.Errorf("got %d, want %d", len(layout.FilteredSeatsInHall(l, filter)), remainingSize)
 			}
 
 		})
@@ -199,7 +200,7 @@ func totalSizeOfGroup(group []packing.Group) int {
 //
 // It takes a slice of [3]int, where the first element is the seat number, the second element is the row number, and the third element is the section number.
 // [numberOfBookedSeats][seat, row, section]
-func bookSeats(l *layout.Layout, seats [][3]int) *layout.Layout {
+func bookSeats(l layout.Hall, seats [][3]int) layout.Hall {
 	for _, seat := range seats {
 		l.Sections()[seat[2]].Rows()[seat[1]].Seats()[seat[0]].Book()
 	}
@@ -208,19 +209,25 @@ func bookSeats(l *layout.Layout, seats [][3]int) *layout.Layout {
 
 }
 
-func createLayout(section, row, seat int) *layout.Layout {
-	l := layout.NewLayout()
+func createLayout(section, row, seat int) layout.Hall {
+
+	sections := make([]layout.Section, section)
 	for i := 0; i < section; i++ {
-		s := layout.NewSection()
+		secB := layout.NewSectionBuilder()
+		rows := make([]layout.Row, row)
 		for j := 0; j < row; j++ {
-			r := layout.NewRow()
+			rb := layout.NewRowBuilder()
+			seats := make([]layout.Seat, seat)
 			for k := 0; k < seat; k++ {
-				r.AddSeat(layout.NewSeat(1, k, k+1))
+				seat := layout.NewSeatBuilder().WithPosition(j, k).WithRank(1).WithNumber(k + 1).Build()
+				seats[k] = seat
 			}
-			s.AddRow(r)
+			rb.WithSeat(seats...)
+			rows[j] = rb.Build()
 		}
-		l.AddSection(s)
+		secB.WithRow(rows...)
+		sections[i] = secB.Build()
 	}
 
-	return l
+	return layout.NewHallBuilder().WithSection(sections...).Build()
 }
