@@ -1,23 +1,10 @@
 package packing_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/nozgurozturk/usher/internal/domain/packing"
 )
-
-type mockGroup struct {
-	size int
-}
-
-func (g *mockGroup) Size() int {
-	return g.size
-}
-
-func createMockGroup(size int) packing.Group {
-	return &mockGroup{size}
-}
 
 func TestPackGroups(t *testing.T) {
 	t.Parallel()
@@ -31,126 +18,124 @@ func TestPackGroups(t *testing.T) {
 	}{
 		{
 			"best-fit packing",
-			[]packing.Group{
-				createMockGroup(1), createMockGroup(3), createMockGroup(4), createMockGroup(4), createMockGroup(5), createMockGroup(1), createMockGroup(2), createMockGroup(4)},
+			createGroups([]int{1, 3, 4, 4, 5, 1, 2, 4}...),
 			8,
 			packing.BestFit,
-			[][]packing.Group{
-				{createMockGroup(1), createMockGroup(3), createMockGroup(4)},
-				{createMockGroup(4), createMockGroup(4)},
-				{createMockGroup(5), createMockGroup(1), createMockGroup(2)},
-			},
+			createGroupOfGroups([][]int{
+				{1, 3, 4},
+				{4, 4},
+				{5, 1, 2},
+			}...),
 		},
 		{
 			"best-fit packing",
-			[]packing.Group{
-				createMockGroup(5), createMockGroup(7), createMockGroup(5), createMockGroup(2), createMockGroup(4), createMockGroup(2), createMockGroup(5), createMockGroup(1), createMockGroup(6)},
+			createGroups([]int{5, 7, 5, 2, 4, 2, 5, 1, 6}...),
 			10,
 			packing.BestFit,
-			[][]packing.Group{
-				{createMockGroup(5), createMockGroup(5)},
-				{createMockGroup(7), createMockGroup(2), createMockGroup(1)},
-				{createMockGroup(4), createMockGroup(2)},
-				{createMockGroup(5)},
-				{createMockGroup(6)},
-			},
+			createGroupOfGroups([][]int{
+				{5, 5},
+				{7, 2, 1},
+				{4, 2},
+				{5},
+				{6},
+			}...),
 		},
 		{
 			"best-fit-decrased packing",
-			[]packing.Group{createMockGroup(5), createMockGroup(4), createMockGroup(4), createMockGroup(4), createMockGroup(3), createMockGroup(2), createMockGroup(1), createMockGroup(1)},
+			createGroups([]int{5, 4, 4, 4, 3, 2, 1, 1}...),
 			8,
 			packing.BestFit,
-			[][]packing.Group{
-				{createMockGroup(5), createMockGroup(3)},
-				{createMockGroup(4), createMockGroup(4)},
-				{createMockGroup(4), createMockGroup(2), createMockGroup(1), createMockGroup(1)},
-			},
+			createGroupOfGroups([][]int{
+				{5, 3},
+				{4, 4},
+				{4, 2, 1, 1},
+			}...),
 		},
 		{
 			"best-fit-decrased packing",
-			[]packing.Group{createMockGroup(7), createMockGroup(6), createMockGroup(5), createMockGroup(5), createMockGroup(5), createMockGroup(4), createMockGroup(2), createMockGroup(2), createMockGroup(1)},
+			createGroups([]int{7, 6, 5, 5, 5, 4, 2, 2, 1}...),
 			10,
 			packing.BestFit,
-			[][]packing.Group{
-				{createMockGroup(7), createMockGroup(2), createMockGroup(1)},
-				{createMockGroup(6), createMockGroup(4)},
-				{createMockGroup(5), createMockGroup(5)},
-				{createMockGroup(5), createMockGroup(2)},
-			},
+			createGroupOfGroups([][]int{
+				{7, 2, 1},
+				{6, 4},
+				{5, 5},
+				{5, 2},
+			}...),
 		},
 		{
 			"first-fit packing",
-			[]packing.Group{createMockGroup(1), createMockGroup(3), createMockGroup(4), createMockGroup(4), createMockGroup(5), createMockGroup(1), createMockGroup(2), createMockGroup(4)},
+			createGroups([]int{1, 3, 4, 4, 5, 1, 2, 4}...),
 			8,
 			packing.FirstFit,
-			[][]packing.Group{
-				{createMockGroup(1), createMockGroup(3), createMockGroup(4)},
-				{createMockGroup(4), createMockGroup(1), createMockGroup(2)},
-				{createMockGroup(5)},
-				{createMockGroup(4)},
-			},
+			createGroupOfGroups([][]int{
+				{1, 3, 4},
+				{4, 1, 2},
+				{5},
+				{4},
+			}...),
 		},
 		{
 			"first-fit packing",
-			[]packing.Group{createMockGroup(5), createMockGroup(7), createMockGroup(5), createMockGroup(2), createMockGroup(4), createMockGroup(2), createMockGroup(5), createMockGroup(1), createMockGroup(6)},
+			createGroups([]int{5, 7, 5, 2, 4, 2, 5, 1, 6}...),
 			10,
 			packing.FirstFit,
-			[][]packing.Group{
-				{createMockGroup(5), createMockGroup(5)},
-				{createMockGroup(7), createMockGroup(2), createMockGroup(1)},
-				{createMockGroup(4), createMockGroup(2)},
-				{createMockGroup(5)},
-				{createMockGroup(6)},
-			},
+			createGroupOfGroups([][]int{
+				{5, 5},
+				{7, 2, 1},
+				{4, 2},
+				{5},
+				{6},
+			}...),
 		},
 		{
 			"first-fit-decrased packing",
-			[]packing.Group{createMockGroup(5), createMockGroup(4), createMockGroup(4), createMockGroup(4), createMockGroup(3), createMockGroup(2), createMockGroup(1), createMockGroup(1)},
+			createGroups([]int{5, 4, 4, 4, 3, 2, 1, 1}...),
 			8,
 			packing.FirstFit,
-			[][]packing.Group{
-				{createMockGroup(5), createMockGroup(3)},
-				{createMockGroup(4), createMockGroup(4)},
-				{createMockGroup(4), createMockGroup(2), createMockGroup(1), createMockGroup(1)},
-			},
+			createGroupOfGroups([][]int{
+				{5, 3},
+				{4, 4},
+				{4, 2, 1, 1},
+			}...),
 		},
 		{
 			"first-fit-decrased packing",
-			[]packing.Group{createMockGroup(7), createMockGroup(6), createMockGroup(5), createMockGroup(5), createMockGroup(5), createMockGroup(4), createMockGroup(2), createMockGroup(2), createMockGroup(1)},
+			createGroups([]int{7, 6, 5, 5, 5, 4, 2, 2, 1}...),
 			10,
 			packing.FirstFit,
-			[][]packing.Group{
-				{createMockGroup(7), createMockGroup(2), createMockGroup(1)},
-				{createMockGroup(6), createMockGroup(4)},
-				{createMockGroup(5), createMockGroup(5)},
-				{createMockGroup(5), createMockGroup(2)},
-			},
+			createGroupOfGroups([][]int{
+				{7, 2, 1},
+				{6, 4},
+				{5, 5},
+				{5, 2},
+			}...),
 		},
 		{
 			"next-fit packing",
-			[]packing.Group{createMockGroup(1), createMockGroup(3), createMockGroup(4), createMockGroup(4), createMockGroup(5), createMockGroup(1), createMockGroup(2), createMockGroup(4)},
+			createGroups([]int{1, 3, 4, 4, 5, 1, 2, 4}...),
 			8,
 			packing.NextFit,
-			[][]packing.Group{
-				{createMockGroup(1), createMockGroup(3), createMockGroup(4)},
-				{createMockGroup(4)},
-				{createMockGroup(5), createMockGroup(1), createMockGroup(2)},
-				{createMockGroup(4)},
-			},
+			createGroupOfGroups([][]int{
+				{1, 3, 4},
+				{4},
+				{5, 1, 2},
+				{4},
+			}...),
 		},
 		{
 			"next-fit packing",
-			[]packing.Group{createMockGroup(5), createMockGroup(7), createMockGroup(5), createMockGroup(2), createMockGroup(4), createMockGroup(2), createMockGroup(5), createMockGroup(1), createMockGroup(6)},
+			createGroups([]int{5, 7, 5, 2, 4, 2, 5, 1, 6}...),
 			10,
 			packing.NextFit,
-			[][]packing.Group{
-				{createMockGroup(5)},
-				{createMockGroup(7)},
-				{createMockGroup(5), createMockGroup(2)},
-				{createMockGroup(4), createMockGroup(2)},
-				{createMockGroup(5), createMockGroup(1)},
-				{createMockGroup(6)},
-			},
+			createGroupOfGroups([][]int{
+				{5},
+				{7},
+				{5, 2},
+				{4, 2},
+				{5, 1},
+				{6},
+			}...),
 		},
 	}
 
@@ -172,8 +157,8 @@ func TestPackGroups(t *testing.T) {
 }
 
 var (
-	unorderedGroups = []packing.Group{createMockGroup(5), createMockGroup(7), createMockGroup(5), createMockGroup(2), createMockGroup(4), createMockGroup(2), createMockGroup(5), createMockGroup(1), createMockGroup(6)}
-	decrasedGroups  = []packing.Group{createMockGroup(7), createMockGroup(6), createMockGroup(5), createMockGroup(5), createMockGroup(5), createMockGroup(4), createMockGroup(2), createMockGroup(2), createMockGroup(1)}
+	unorderedGroups = createGroups([]int{5, 7, 5, 2, 4, 2, 5, 1, 6}...)
+	decrasedGroups  = createGroups([]int{7, 6, 5, 5, 5, 4, 2, 2, 1}...)
 	capacity        = 10
 )
 
@@ -232,21 +217,38 @@ func comparePackedGroups(t *testing.T, got, want [][]packing.Group) {
 
 		for j, col := range row {
 			if col.Size() != want[i][j].Size() {
-				t.Errorf("got %s, want %s", groupstr(got), groupstr(want))
+				t.Errorf("got %d, want %d", col, want[i][j])
 			}
 		}
 	}
 }
 
-func groupstr(listOfGroups [][]packing.Group) string {
-	var str string
-	for _, groups := range listOfGroups {
-		str += "["
-		for _, group := range groups {
-			str += fmt.Sprintf("[%d]", group.Size())
-		}
-		str += "]"
+type mockGroup struct {
+	size int
+}
+
+func (g *mockGroup) Size() int {
+	return g.size
+}
+
+// createGroups creates a slice of groups with the given sizes
+func createGroups(sizes ...int) []packing.Group {
+	groups := make([]packing.Group, len(sizes))
+
+	for i, size := range sizes {
+		groups[i] = &mockGroup{size}
 	}
 
-	return str
+	return groups
+}
+
+// createGroupOfGroups creates a slice of groups of groups with the given sizes
+func createGroupOfGroups(sizes ...[]int) [][]packing.Group {
+	groups := make([][]packing.Group, len(sizes))
+
+	for i, size := range sizes {
+		groups[i] = createGroups(size...)
+	}
+
+	return groups
 }

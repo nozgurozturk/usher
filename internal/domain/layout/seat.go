@@ -1,12 +1,10 @@
 package layout
 
-import "strconv"
-
 type SeatFeature byte
 
+const SeatFeatureDefault SeatFeature = 0
 const (
-	SeatFeatureDefault SeatFeature = 1 << iota
-	SeatFeatureAisle
+	SeatFeatureAisle SeatFeature = 1 << iota
 	SeatFeatureHigh
 	SeatFeatureFront
 )
@@ -123,6 +121,7 @@ func (s *seat) Dismiss() {
 
 func (s *seat) HasFeature(feature SeatFeature) bool {
 	return s.feature&feature != 0
+
 }
 
 func (s *seat) Feature() SeatFeature {
@@ -130,11 +129,23 @@ func (s *seat) Feature() SeatFeature {
 }
 
 func (s *seat) String() string {
-	rep := strconv.Itoa(s.Rank())
+	// rep := strconv.Itoa(s.Rank())
+	// UTF-8 Empty Box
+	// rep =
+	rep := "□"
 	if !s.Available() {
-		rep = "X"
+		// UTF-8 Full Box
+		rep = "■"
+		// rep = "X"
 	}
-	return "[" + rep + "]"
+	if s.HasFeature(SeatFeatureFront) {
+		rep = "F" + rep
+	}
+	if s.HasFeature(SeatFeatureHigh) {
+		rep = "H" + rep
+	}
+	return rep
+	// return "[" + rep + "]"
 }
 
 func (s *seat) Copy() Seat {
@@ -146,4 +157,16 @@ func (s *seat) Copy() Seat {
 		available: s.available,
 		feature:   s.feature,
 	}
+}
+
+func FilteredSeatBlock(seatBlock []Seat, filter Filter) []Seat {
+	availableSeats := make([]Seat, 0, len(seatBlock))
+
+	for _, seat := range seatBlock {
+		if filter.FilterSeat(seat) != nil {
+			availableSeats = append(availableSeats, seat)
+		}
+	}
+
+	return availableSeats
 }
