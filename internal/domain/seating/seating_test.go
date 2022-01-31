@@ -2,6 +2,8 @@ package seating_test
 
 import (
 	"errors"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/nozgurozturk/usher/internal/domain/group"
@@ -32,7 +34,7 @@ func TestReserveSeatsForGroups(t *testing.T) {
 				{3, 0, 1},
 				{4, 1, 1},
 			},
-			[]group.Group{group.NewGroup(3, 1), group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(1, 1), group.NewGroup(3, 1), group.NewGroup(1, 1), group.NewGroup(1, 1)},
+			[]group.Group{group.NewGroup(randomID(), 3, 1), group.NewGroup(randomID(), 2, 1), group.NewGroup(randomID(), 2, 1), group.NewGroup(randomID(), 1, 1), group.NewGroup(randomID(), 3, 1), group.NewGroup(randomID(), 1, 1), group.NewGroup(randomID(), 1, 1)},
 			1,
 			nil,
 		},
@@ -42,7 +44,7 @@ func TestReserveSeatsForGroups(t *testing.T) {
 			[][3]int{
 				{0, 1, 0},
 			},
-			[]group.Group{group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(2, 1), group.NewGroup(2, 1)},
+			[]group.Group{group.NewGroup(randomID(), 2, 1), group.NewGroup(randomID(), 2, 1), group.NewGroup(randomID(), 2, 1), group.NewGroup(randomID(), 2, 1)},
 			1,
 			seating.ErrNotEnoughSpace,
 		},
@@ -52,7 +54,7 @@ func TestReserveSeatsForGroups(t *testing.T) {
 			[][3]int{
 				{0, 1, 0},
 			},
-			[]group.Group{group.NewGroup(3, 1)},
+			[]group.Group{group.NewGroup(randomID(), 3, 1)},
 			1,
 			seating.ErrNotEnoughSeats,
 		},
@@ -68,14 +70,21 @@ func TestReserveSeatsForGroups(t *testing.T) {
 
 		filter := layout.NewFilter().WithRank(test.rank).WithAvailable(true)
 		t.Run(test.name, func(t *testing.T) {
-			l, err := seating.ReserveSeatsForGroups(test.groups, testLayout)
+			l, g, err := seating.ReserveSeatsForGroups(test.groups, testLayout)
 
 			if !errors.Is(err, test.err) {
 				t.Errorf("got %v, want %v", err, test.err)
 			}
 
-			if err == nil && remainingSize != len(layout.FilteredSeatsInHall(l, filter)) {
-				t.Errorf("got %d, want %d", len(layout.FilteredSeatsInHall(l, filter)), remainingSize)
+			if err == nil {
+				for _, group := range g {
+					if !group.IsSatisfied() {
+						t.Errorf("group %s is not satisfied: %d - %v", group.ID(), group.Size(), group.Seats())
+					}
+				}
+				if remainingSize != len(layout.FilteredSeatsInHall(l, filter)) {
+					t.Errorf("got %d, want %d", len(layout.FilteredSeatsInHall(l, filter)), remainingSize)
+				}
 			}
 
 		})
@@ -127,4 +136,8 @@ func createLayout(section, row, seat int) layout.Hall {
 	}
 
 	return layout.NewHallBuilder().WithSection(sections...).Build()
+}
+
+func randomID() string {
+	return strconv.FormatInt(rand.Int63(), 16)
 }

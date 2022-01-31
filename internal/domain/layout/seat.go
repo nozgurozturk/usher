@@ -9,7 +9,12 @@ const (
 	SeatFeatureFront
 )
 
+func (s SeatFeature) Is(feature SeatFeature) bool {
+	return s&feature != 0
+}
+
 type SeatBuilder interface {
+	WithID(id string) SeatBuilder
 	// WithPosition sets the position of the seat.
 	WithPosition(row, col int) SeatBuilder
 	// WithRank sets the rank of the seat.
@@ -25,6 +30,7 @@ type SeatBuilder interface {
 }
 
 type seatBuilder struct {
+	id      string
 	row     int
 	col     int
 	rank    int
@@ -37,6 +43,11 @@ func NewSeatBuilder() SeatBuilder {
 	return &seatBuilder{
 		feature: SeatFeatureDefault,
 	}
+}
+
+func (sb *seatBuilder) WithID(id string) SeatBuilder {
+	sb.id = id
+	return sb
 }
 
 func (b *seatBuilder) WithPosition(row, col int) SeatBuilder {
@@ -73,6 +84,7 @@ func (b *seatBuilder) From(seat Seat) SeatBuilder {
 
 func (b *seatBuilder) Build() Seat {
 	return &seat{
+		id:        b.id,
 		row:       b.row,
 		col:       b.col,
 		rank:      b.rank,
@@ -83,12 +95,17 @@ func (b *seatBuilder) Build() Seat {
 }
 
 type seat struct {
+	id        string
 	row       int
 	col       int
 	rank      int
 	number    int
 	available bool
 	feature   SeatFeature
+}
+
+func (s *seat) ID() string {
+	return s.id
 }
 
 func (s *seat) Position() (int, int) {
@@ -129,23 +146,30 @@ func (s *seat) Feature() SeatFeature {
 }
 
 func (s *seat) String() string {
-	// rep := strconv.Itoa(s.Rank())
-	// UTF-8 Empty Box
-	// rep =
 	rep := "□"
 	if !s.Available() {
-		// UTF-8 Full Box
 		rep = "■"
-		// rep = "X"
 	}
-	if s.HasFeature(SeatFeatureFront) {
-		rep = "F" + rep
-	}
-	if s.HasFeature(SeatFeatureHigh) {
-		rep = "H" + rep
-	}
+
 	return rep
-	// return "[" + rep + "]"
+}
+
+func (s *seat) JSON() interface{} {
+	return struct {
+		Row       int  `json:"row"`
+		Col       int  `json:"col"`
+		Rank      int  `json:"rank"`
+		Number    int  `json:"number"`
+		Available bool `json:"available"`
+		Feature   int  `json:"feature"`
+	}{
+		Row:       s.row,
+		Col:       s.col,
+		Rank:      s.rank,
+		Number:    s.number,
+		Available: s.available,
+		Feature:   int(s.Feature()),
+	}
 }
 
 func (s *seat) Copy() Seat {

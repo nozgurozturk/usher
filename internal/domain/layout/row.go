@@ -90,42 +90,18 @@ func (r *row) Copy() Row {
 	}
 }
 
-func FilteredSeatsInRow(row Row, filter Filter) []Seat {
-	availableSeats := make([]Seat, 0, len(row.Seats()))
-
-	for _, seat := range row.Seats() {
-		if filter.FilterSeat(seat) != nil {
-			availableSeats = append(availableSeats, seat)
-		}
+func (r *row) JSON() interface{} {
+	seats := make([]interface{}, len(r.Seats()))
+	for i, seat := range r.Seats() {
+		seats[i] = seat.JSON()
 	}
-
-	return availableSeats
-}
-
-func ConsecutiveFilteredSeatsInRow(row Row, filter Filter) [][]Seat {
-	consecutiveAvailableSeats := make([][]Seat, 0, len(row.Seats()))
-
-	for i, seat := range row.Seats() {
-		if filter.FilterSeat(seat) == nil {
-			continue
-		}
-
-		if i == 0 {
-			consecutiveAvailableSeats = append(consecutiveAvailableSeats, []Seat{seat})
-			continue
-		}
-
-		prevSeat := row.Seats()[i-1]
-
-		// Previous seat is same as filtering result with current.
-		if filter.FilterSeat(prevSeat) != nil {
-			consecutiveAvailableSeats[len(consecutiveAvailableSeats)-1] = append(consecutiveAvailableSeats[len(consecutiveAvailableSeats)-1], seat)
-			continue
-		}
-
-		// Previous seat is different from filtering result with current.
-		consecutiveAvailableSeats = append(consecutiveAvailableSeats, []Seat{seat})
+	return struct {
+		Name  string        `json:"name"`
+		Order int           `json:"order"`
+		Seats []interface{} `json:"seats"`
+	}{
+		Name:  r.Name(),
+		Order: r.Order(),
+		Seats: seats,
 	}
-
-	return consecutiveAvailableSeats
 }

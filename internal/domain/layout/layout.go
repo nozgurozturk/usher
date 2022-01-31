@@ -2,6 +2,8 @@ package layout
 
 // Hall interface
 type Hall interface {
+	// ID returns the ID of the hall.
+	ID() string
 	// Name returns the name of the venue.
 	Name() string
 	// Sections returns the sections of the venue.
@@ -40,6 +42,8 @@ type Row interface {
 
 // Seat interface
 type Seat interface {
+	// ID returns the ID of the seat.
+	ID() string
 	// Position returns the position of the seat.
 	Position() (int, int)
 	// Rank returns the rank of the seat.
@@ -68,65 +72,6 @@ type Seat interface {
 type Stringer interface {
 	// String returns a string representation of the seat.
 	String() string
-}
-
-// Filter interface for filtering seats
-type Filter interface {
-	// WithFeature sets the feature of the seat.
-	WithFeature(feature SeatFeature) Filter
-	// WithRank sets the rank of the seat.
-	WithRank(rank int) Filter
-	// WithAvailable sets the available of the seat.
-	WithAvailable(available bool) Filter
-	// FilterSeats filters the seats.
-	FilterSeat(seat Seat) Seat
-}
-
-type filter struct {
-	feature   SeatFeature
-	rank      *int
-	available *bool
-}
-
-// NewFilter creates a new filter.
-func NewFilter() Filter {
-	return &filter{}
-}
-
-// WithFeature sets the feature of the seat.
-func (f *filter) WithFeature(feature SeatFeature) Filter {
-	f.feature |= feature
-	return f
-}
-
-// WithRank sets the rank of the seat.
-func (f *filter) WithRank(rank int) Filter {
-	f.rank = &rank
-	return f
-}
-
-// WithAvailable sets the available of the seat.
-func (f *filter) WithAvailable(available bool) Filter {
-	f.available = &available
-	return f
-}
-
-// FilterSeats filters the seats.
-func (f *filter) FilterSeat(seat Seat) Seat {
-
-	// fmt.Println("filter", f.feature, seat.Feature(), seat.HasFeature(f.feature), seat.String())
-
-	if f.feature > SeatFeatureDefault && !seat.HasFeature(f.feature) {
-		return nil
-	}
-
-	if f.rank != nil && seat.Rank() != *f.rank {
-		return nil
-	}
-
-	if f.available != nil && !seat.Available() {
-		return nil
-	}
-
-	return seat
+	// JSON returns a JSON representation of the seat.
+	JSON() interface{}
 }
