@@ -67,30 +67,24 @@ func (s *section) Copy() Section {
 	}
 }
 
+func (s *section) JSON() interface{} {
+	rows := make([]interface{}, len(s.Rows()))
+	for i, row := range s.rows {
+		rows[i] = row.JSON()
+	}
+	return struct {
+		Name string        `json:"name"`
+		Rows []interface{} `json:"rows"`
+	}{
+		Name: s.Name(),
+		Rows: rows,
+	}
+}
+
 func (s *section) String() string {
 	str := "S-" + s.Name() + "\n"
 	for _, row := range s.Rows() {
 		str += row.String() + "\n"
 	}
 	return str
-}
-
-func FilteredSeatsInSection(section Section, filter Filter) []Seat {
-	var seats []Seat
-
-	for _, row := range section.Rows() {
-		seats = append(seats, FilteredSeatsInRow(row, filter)...)
-	}
-
-	return seats
-}
-
-func ConsecutiveFilteredSeatsInSection(section Section, filter Filter) [][]Seat {
-	var seats [][]Seat
-
-	for _, row := range section.Rows() {
-		seats = append(seats, ConsecutiveFilteredSeatsInRow(row, filter)...)
-	}
-
-	return seats
 }

@@ -1,9 +1,10 @@
 package group
 
 import (
+	"errors"
 	"fmt"
-	"math/rand"
-	"strconv"
+
+	"github.com/nozgurozturk/usher/internal/domain/layout"
 )
 
 type SeatPreference byte
@@ -24,26 +25,33 @@ type Group interface {
 	SeatPreferences() SeatPreference
 	// RankPreferences returns the preference of the group.
 	RankPreference() int
-	// String returns a string representation of the group.
+	// Seats returns the seats of the group.
+	Seats() []layout.Seat
+	// AllocateSeats allocates seats for the group.
+	AllocateSeats(s ...layout.Seat) error
+	// IsSatisfied returns true if the group is satisfied.
+	IsSatisfied() bool
+	// String returns the string representation of the group.
 	String() string
 }
 
 type group struct {
-	id   string
-	size int
-	rank int
+	id    string
+	size  int
+	rank  int
+	seats []layout.Seat
 	SeatPreference
 }
 
 // NewGroup returns a new group.
-func NewGroup(size int, rank int, preferences ...SeatPreference) Group {
+func NewGroup(id string, size int, rank int, preferences ...SeatPreference) Group {
 	preference := PreferenceDefault
 	for _, p := range preferences {
 		preference |= p
 	}
 
 	return &group{
-		id:             strconv.FormatInt(rand.Int63(), 16),
+		id:             id,
 		size:           size,
 		rank:           rank,
 		SeatPreference: preference,
@@ -65,6 +73,24 @@ func (g *group) SeatPreferences() SeatPreference {
 
 func (g *group) RankPreference() int {
 	return g.rank
+}
+
+func (g *group) Seats() []layout.Seat {
+	return g.seats
+}
+
+func (g *group) AllocateSeats(s ...layout.Seat) error {
+	for _, seat := range s {
+		if !seat.Available() {
+			return errors.New("seat is not available")
+		}
+		g.seats = append(g.seats, seat)
+	}
+	return nil
+}
+
+func (g *group) IsSatisfied() bool {
+	return len(g.seats) == g.Size()
 }
 
 func (g *group) String() string {

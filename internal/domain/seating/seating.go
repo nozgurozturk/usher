@@ -14,7 +14,7 @@ var (
 	ErrNotEnoughSpace = fmt.Errorf("not enough space")
 )
 
-func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, error) {
+func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, []group.Group, error) {
 
 	// Copy Layout
 	hall := h.Copy()
@@ -26,7 +26,7 @@ func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, error) 
 
 	// check Total Size of groups is less than the available seats.
 	if err := checkEnoughSpace(availableSeats, g); err != nil {
-		return h, err
+		return h, g, err
 	}
 
 	// copy groups
@@ -46,7 +46,7 @@ func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, error) 
 		for _, group := range packedGroups {
 
 			// Find Closest Seat block for the group.
-			closestSeatBlock, _ := findClosestSeatBlock(group, availableSeats)
+			closestSeatBlock, _ := FindClosestSeatBlock(group, availableSeats)
 
 			// If didn't find any seat block then skip this group.
 			if closestSeatBlock == nil {
@@ -56,33 +56,37 @@ func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, error) 
 			// printInfo(groups, packedListOfGroups, group, closestSeatBlock, hall)
 			// Book the seats.
 			for i := 0; i < group.Size(); i++ {
+				if err := group.AllocateSeats(closestSeatBlock[i]); err != nil {
+					continue
+				}
 				closestSeatBlock[i].Book()
 			}
 
 			// Remove group from groups.
-			groups = removeGroup(groups, group)
+			// groups = removeGroup(groups, group)
 
-			if len(groups) == 0 {
+			if isAllGroupsSatisfied(groups) {
 				break
 			}
 		}
 	}
 
-	if len(groups) > 0 {
-		return h, ErrNotEnoughSeats
+	if !isAllGroupsSatisfied(groups) {
+		return h, g, ErrNotEnoughSeats
 	}
 
-	return hall, nil
+	return hall, groups, nil
 }
 
-// removeGroup removes the given group from the list of groups.
-func removeGroup(groups []group.Group, group group.Group) []group.Group {
-	for i, g := range groups {
-		if g.ID() == group.ID() {
-			return append(groups[:i], groups[i+1:]...)
+// isAllGroupsSatisfied checks if all groups are satisfied.
+func isAllGroupsSatisfied(groups []group.Group) bool {
+	for _, group := range groups {
+		if !group.IsSatisfied() {
+			return false
 		}
 	}
-	return groups
+
+	return true
 }
 
 // checkEnoughSpace checks if the total size of groups is less than the available seats.
@@ -106,7 +110,7 @@ func checkEnoughSpace(seats [][]layout.Seat, groups []group.Group) error {
 	return nil
 }
 
-func findClosestSeatBlock(group group.Group, availableSeats [][]layout.Seat) ([]layout.Seat, int) {
+func FindClosestSeatBlock(group group.Group, availableSeats [][]layout.Seat) ([]layout.Seat, int) {
 
 	filteredAvailableSeats := make([][]layout.Seat, 0, len(availableSeats))
 	filter := layout.NewFilter().
@@ -114,20 +118,16 @@ func findClosestSeatBlock(group group.Group, availableSeats [][]layout.Seat) ([]
 		WithRank(group.RankPreference()).
 		WithFeature(layout.SeatFeature(group.SeatPreferences()))
 
+	maxSize := 0
 	for _, seatBlock := range availableSeats {
 		filteredSeatBlock := layout.FilteredSeatBlock(seatBlock, filter)
 		if len(filteredSeatBlock) > 0 {
 			filteredAvailableSeats = append(filteredAvailableSeats, filteredSeatBlock)
+			if len(seatBlock) > maxSize {
+				maxSize = len(seatBlock)
+			}
 		}
 	}
-
-	maxSize := 0
-	for _, seatBlock := range filteredAvailableSeats {
-		if len(seatBlock) > maxSize {
-			maxSize = len(seatBlock)
-		}
-	}
-
 	// max value
 	minAvailableSeatsInBlock := maxSize
 	var closestSeatBlock []layout.Seat
