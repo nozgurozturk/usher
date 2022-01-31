@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"entgo.io/ent/dialect/sql/schema"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nozgurozturk/usher/internal/application"
 	"github.com/nozgurozturk/usher/internal/infrastructure/store/ent"
@@ -20,15 +21,17 @@ func main() {
 	// Read env variables
 	addr := getEnv("PORT", "8080")
 	dbURL := getEnv("DATABASE_URL", "file:usher.db?cache=shared&mode=memory&_fk=1")
+	dbDriver := getEnv("DATABASE_DRIVER", "sqlite3")
 
 	// Override if arguments are existed
 	port := flag.String("port", addr, "Server PORT")
 	databaseURL := flag.String("database", dbURL, "Database URL")
+	databaseDriver := flag.String("driver", dbDriver, "Database Driver")
 
 	flag.Parse()
 
 	// Connect DB
-	db, err := ent.Open("sqlite3", *databaseURL)
+	db, err := ent.Open(*databaseDriver, *databaseURL)
 	if err != nil {
 		panic(err)
 	}

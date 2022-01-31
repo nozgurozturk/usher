@@ -1,6 +1,6 @@
 FROM golang:1.17-alpine AS build
 
-RUN apk update && apk add --no-cache git
+RUN apk update && apk add --no-cache git && apk add --update gcc musl-dev
 
 # Create a user group 'theater'
 # Create a user 'usher' under 'theater'
@@ -8,8 +8,6 @@ RUN addgroup theater && adduser --disabled-password -DH -G theater usher
 
 # Set the Current Working Directory inside the container
 WORKDIR /tmp/usher
-
-ENV CGO_ENABLED=1 GOOS=linux GOARCH=amd64
 
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY go.mod .
@@ -20,13 +18,13 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o ./app/usher ./cmd/usher
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o ./app/usher ./cmd/usher
 
 # Start fresh from a smaller image
 FROM alpine:latest
 
-ENV PORT 8081
-EXPOSE 8081
+ENV PORT 8080
+EXPOSE 8080
 
 # Import users and groups
 COPY --from=build /etc/passwd /etc/passwd

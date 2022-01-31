@@ -27,3 +27,11 @@ openapi:
 
 entgo:
 	go generate ./internal/infrastructure/store/ent
+
+docker_build:
+	
+	docker build --rm -f ./build/Dockerfile -t usher .
+
+docker_run:
+    
+	docker run --name usher -it -p 8080:8080 usher 
