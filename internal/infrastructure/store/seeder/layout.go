@@ -42,7 +42,7 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 			rows := make([]layout.Row, len(section.Rows))
 
 			for rowIndex, row := range section.Rows {
-				rowName := strconv.Itoa(rowIndex + 1)
+				rowName := section.Name + strconv.Itoa(rowIndex+1)
 				rowBuilder := layout.NewRowBuilder().WithName(rowName).WithOrder(rowIndex)
 				seats := make([]layout.Seat, len(row.Seats))
 

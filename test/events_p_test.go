@@ -122,7 +122,7 @@ func (s *E2ETestSuite) TestE2E_GetEvent() {
 						"col": 0
 					  },
 					  "number": 1,
-					  "features": 1,
+					  "features": 5,
 					  "rank": 1,
 					  "available": true
 					}
@@ -141,7 +141,7 @@ func (s *E2ETestSuite) TestE2E_GetEvent() {
 func (s *E2ETestSuite) TestE2E_CheckEventSeats() {
 	/*
 		Features are:
-		"default": 0,
+		"default": 1,
 		"balcony": 2,
 		"front":   4,
 	*/
@@ -205,8 +205,7 @@ func (s *E2ETestSuite) TestE2E_CheckEventSeats() {
 
 		expected := `
 		{
-			"remaining": 3,
-			"reserved": 0
+			"remaining": 3
 		}`
 
 		s.Require().JSONEq(expected, string(byteBody))
@@ -237,8 +236,7 @@ func (s *E2ETestSuite) TestE2E_CheckEventSeats() {
 
 		expected := `
 		{
-			"remaining": 4,
-			"reserved": 0
+			"remaining": 4
 		}`
 
 		s.Require().JSONEq(expected, string(byteBody))
@@ -269,8 +267,7 @@ func (s *E2ETestSuite) TestE2E_CheckEventSeats() {
 
 		expected := `
 		{
-			"remaining": 7,
-			"reserved": 0
+			"remaining": 7
 		}`
 
 		s.Require().JSONEq(expected, string(byteBody))
