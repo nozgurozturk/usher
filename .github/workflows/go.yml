@@ -44,5 +44,5 @@ jobs:
       - name: Install dependencies
         run: go mod download
       
-      - name: Run integration tests
-        run: make test_integration
+      - name: Run e2e tests
+        run: make test_e2e
