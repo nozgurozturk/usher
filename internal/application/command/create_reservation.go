@@ -112,13 +112,17 @@ func (h CreateReservationHandler) Handle(c CreateReservationCommand) error {
 		SetEvent(eventDAO).
 		Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 
 	_, err = tx.Event.UpdateOne(eventDAO).SetSeatMap(event.SeatMap().String()).Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 

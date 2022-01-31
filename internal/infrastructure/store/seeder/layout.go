@@ -2,6 +2,7 @@ package seeder
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"strings"
 
@@ -114,6 +115,15 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 		panic(err)
 	}
 
+	// recover from panic
+	defer func() {
+		if r := recover(); r != nil {
+			if err := tx.Rollback(); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
+
 	layoutCreates := make([]*ent.LayoutCreate, len(halls))
 
 	for layoutIndex, l := range halls {
@@ -139,7 +149,6 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 
 				seats, err := tx.Seat.CreateBulk(seatEntities...).Save(ctx)
 				if err != nil {
-					tx.Rollback()
 					panic(err)
 				}
 
@@ -151,7 +160,6 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 
 			rows, err := tx.Row.CreateBulk(rowEntities...).Save(ctx)
 			if err != nil {
-				tx.Rollback()
 				panic(err)
 			}
 
@@ -162,7 +170,6 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 
 		entSections, err := tx.Section.CreateBulk(sectionCreates...).Save(ctx)
 		if err != nil {
-			tx.Rollback()
 			panic(err)
 		}
 
@@ -174,12 +181,10 @@ func CreateLayouts(c *ent.Client, ls ...Layout) []*ent.Layout {
 
 	layouts, err := tx.Layout.CreateBulk(layoutCreates...).Save(ctx)
 	if err != nil {
-		tx.Rollback()
 		panic(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		tx.Rollback()
 		panic(err)
 	}
 	return layouts

@@ -67,7 +67,9 @@ func (h ReserveSeatsHandler) Handle(c ReserverSeatsCommand) error {
 
 	tx, err := h.store.Tx(ctx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -86,7 +88,9 @@ func (h ReserveSeatsHandler) Handle(c ReserverSeatsCommand) error {
 		for i := 0; i < group.Size(); i++ {
 			seatID, err := uuid.Parse(group.Seats()[i].ID())
 			if err != nil {
-				tx.Rollback()
+				if err := tx.Rollback(); err != nil {
+					return err
+				}
 				return err
 			}
 			ticketCreates = append(ticketCreates, tx.Ticket.Create().
@@ -98,12 +102,16 @@ func (h ReserveSeatsHandler) Handle(c ReserverSeatsCommand) error {
 	}
 	_, err = tx.Reservation.Update().Where(daoRes.HasEventWith(dao.ID(eventID))).SetIsActive(false).Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 	_, err = tx.Ticket.CreateBulk(ticketCreates...).Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -112,12 +120,16 @@ func (h ReserveSeatsHandler) Handle(c ReserverSeatsCommand) error {
 		Save(ctx)
 
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 

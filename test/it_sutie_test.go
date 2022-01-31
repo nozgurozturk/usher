@@ -44,7 +44,7 @@ func (s *E2ETestSuite) TearDownSuite() {
 }
 
 func (s *E2ETestSuite) SetupTest() {
-	s.db.Schema.Create(
+	_ = s.db.Schema.Create(
 		context.Background(),
 		migrate.WithDropColumn(true),
 		migrate.WithDropIndex(true),

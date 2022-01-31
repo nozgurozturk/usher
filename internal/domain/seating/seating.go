@@ -56,7 +56,9 @@ func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, []group
 			// printInfo(groups, packedListOfGroups, group, closestSeatBlock, hall)
 			// Book the seats.
 			for i := 0; i < group.Size(); i++ {
-				group.AllocateSeats(closestSeatBlock[i])
+				if err := group.AllocateSeats(closestSeatBlock[i]); err != nil {
+					continue
+				}
 				closestSeatBlock[i].Book()
 			}
 
@@ -76,19 +78,8 @@ func ReserveSeatsForGroups(g []group.Group, h layout.Hall) (layout.Hall, []group
 	return hall, groups, nil
 }
 
-// removeGroup removes the given group from the list of groups.
-func removeGroup(groups []group.Group, group group.Group) []group.Group {
-	for i, g := range groups {
-		if g.ID() == group.ID() {
-			return append(groups[:i], groups[i+1:]...)
-		}
-	}
-	return groups
-}
-
 // isAllGroupsSatisfied checks if all groups are satisfied.
 func isAllGroupsSatisfied(groups []group.Group) bool {
-
 	for _, group := range groups {
 		if !group.IsSatisfied() {
 			return false
