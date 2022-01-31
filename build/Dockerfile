@@ -9,6 +9,8 @@ RUN addgroup theater && adduser --disabled-password -DH -G theater usher
 # Set the Current Working Directory inside the container
 WORKDIR /tmp/usher
 
+ENV CGO_ENABLED=1 GOOS=linux GOARCH=amd64
+
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY go.mod .
 COPY go.sum .
