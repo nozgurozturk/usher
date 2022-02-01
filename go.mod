@@ -1,7 +1,7 @@
 module github.com/nozgurozturk/usher
 
 go 1.17
-
+// +heroku goVersion go1.17
 require (
 	entgo.io/ent v0.10.0
 	github.com/deepmap/oapi-codegen v1.9.1
